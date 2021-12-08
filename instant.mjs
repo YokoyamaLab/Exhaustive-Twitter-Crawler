@@ -14,12 +14,6 @@ import { Command, Option } from 'commander/esm.mjs';
 const program = new Command();
 const { terminal } = terminal_kit;
 
-//  node instant.mjs --id testquery --term 2021/10/01T00:00-2021/10/05T00:00 --keywords コロナ マスク --url ws://tokyo004:45803/ --webdav --destination https://file.tmu.ac:4580/home/Drive/labo/twitter/ --user shohei.yokoyama
-
-//  node instant.mjs --id eguchi20211208 --term 2021/02/01T00:00-2021/04/01T00:00 --keywords COVID-19 vaccin --url ws://tokyo004:45803/ --webdav --destination https://file.tmu.ac:4580/home/Drive/labo/twitter/ --user shohei.yokoyama
-
-// node instant.mjs --id narita20211208 --term 2020/05/01T00:00-2021/07/01T00:00 --keywords コロナ --url ws://tokyo004:45803/ --webdav --destination https://file.tmu.ac:4580/home/Drive/labo/twitter/ --user shohei.yokoyama
-
 program
     .requiredOption('-i, --id <id>', 'Query Identifier')
     .requiredOption('-u, --url <url>', 'URL of WebSocket Server')

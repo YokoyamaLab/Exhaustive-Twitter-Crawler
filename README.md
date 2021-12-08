@@ -4,7 +4,7 @@
 
 ## 使い方
 ```
-npx parallel-full-twitter instant <option>
+npx -p exhaustive-twitter-crawler instant <option>
 ```
 
 ### オプション
@@ -31,5 +31,5 @@ npx parallel-full-twitter instant <option>
   
 * 2021年10月25日から11月4日においてハロウィンもしくはコロナが含まれた日本語のツイートのうちリツイートではないものを検索しWebDAVサーバへアップロードしたい。
 ```
-npx parallel-full-twitter instant --id yokoyama20211208 --term 2021/10/25T00:00-2021/11/5T00:00 --keywords ハロウィン 仮装 --keywords-match text-or --ignore-retweet --url wss://query-server:1111/ --webdav --destination https://web-dav-server:2222/result/ --user shohei
+npx -p exhaustive-twitter-crawler instant --id yokoyama20211208 --term 2021/10/25T00:00-2021/11/5T00:00 --keywords ハロウィン 仮装 --keywords-match text-or --ignore-retweet --url wss://query-server:1111/ --webdav --destination https://web-dav-server:2222/result/ --user shohei
 ```
