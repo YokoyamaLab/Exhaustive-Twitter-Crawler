@@ -1,0 +1,30 @@
+{
+    "name": "exhaustive-twitter-crawler",
+    "version": "0.0.4",
+    "description": "",
+    "main": "instant.mjs",
+    "scripts": {
+        "instant": "node instant.mjs"
+    },
+    "bin": {
+        "instant": "instant.mjs"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/YokoyamaLab/parallel-full-twitter-monitor.git"
+    },
+    "author": "Shohei Yokoyama",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/YokoyamaLab/parallel-full-twitter-monitor/issues"
+    },
+    "homepage": "https://github.com/YokoyamaLab/parallel-full-twitter-monitor#readme",
+    "dependencies": {
+        "commander": "^8.3.0",
+        "cron": "^1.8.2",
+        "luxon": "^2.1.1",
+        "socket.io-client": "^4.4.0",
+        "terminal-kit": "^2.2.4",
+        "uniqid": "^5.4.0"
+    }
+}
