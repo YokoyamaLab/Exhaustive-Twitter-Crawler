@@ -66,9 +66,9 @@ if (options.giveaway == 'webdav') {
             fs.mkdirSync(options.destination, { recursive: true });
         }
         if (!options.destination) {
-            options.destination = path.resolve('~/exhaustive-twitter');
+            options.destination = path.normalize('~/exhaustive-twitter');
         } else {
-            options.destination = path.resolve(options.destination);
+            options.destination = path.normalize(options.destination);
         }
     } catch (e) {
         terminal('Error:' + e + '\n');
