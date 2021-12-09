@@ -22,11 +22,9 @@ program
         'Search Term'
     )
     .addOption(
-        new Option('--keywords-match <method>', 'Text Match Method').choices([
-            'text-and',
-            'text-or',
-            'RegExp',
-        ]).default('text-or', 'Text OR')
+        new Option('--keywords-match <method>', 'Text Match Method')
+            .choices(['text-and', 'text-or', 'RegExp'])
+            .default('text-or', 'Text OR')
     )
     .requiredOption(
         '-k, --keywords <word...>',
@@ -38,28 +36,49 @@ program
     .option('-m, --mask', 'JSON Mask (https://www.npmjs.com/package/json-mask)')
     .option('--ignore-retweet', 'Ignore Retweet')
     .option('--only-retweet', 'Only Retweet')
-    .option('-w, --webdav', 'Upload to Webdav Server')
-    .option(
-        '-d, --destination <url>',
-        'Save Location (WebDAV)'
+    .addOption(
+        new Option('-g, --giveaway <method>', 'Upload Method')
+            .choices(['no', 'local', 'webdav'])
+            .default('local', 'Copy to anywhere in the local')
     )
+    .option('-d, --destination <url-or-path>', 'Save Location')
     .option('-n, --user <username>', 'Username for Webdav Server');
 
 program.parse();
 const options = program.opts();
 
 let password;
-if (options.webdav) {
+if (options.giveaway == 'webdav') {
+    if (!options.destination) {
+        terminal(
+            'ERROR: ' + 'WebDAV URL NOT FOUND. Please specify --destination.\n'
+        );
+        terminal.processExit();
+    }
     terminal('Password for the webdav server:');
     password = await terminal.inputField({
         echoChar: true,
     }).promise;
     terminal('\nThank you for telling me your password! 😋\n');
+} else if (options.giveaway == 'local') {
+    try {
+        if (!fs.existsSync(options.destination)) {
+            fs.mkdirSync(options.destination, { recursive: true });
+        }
+        if (!options.destination) {
+            options.destination = path.resolve('~/exhaustive-twitter');
+        } else {
+            options.destination = path.resolve(options.destination);
+        }
+    } catch (e) {
+        terminal('Error:' + e + '\n');
+        terminal.processExit();
+    }
 }
 
 const HOME_DIR =
     process.env[process.platform == 'win32' ? 'USERPROFILE' : 'HOME'];
-const monitorIdFile = path.join(HOME_DIR, '.parallel-full-twitter');
+const monitorIdFile = path.join(HOME_DIR, '.exhaustive-twitter');
 const monitorId = fs.existsSync(monitorIdFile)
     ? fs.readFileSync(monitorIdFile, { encoding: 'utf8' })
     : uniqid('PFT');
@@ -102,30 +121,47 @@ if (options.onlyRetweet) {
 }
 const queryId = monitorId + '_' + uniqid();
 console.log(query, queryId);
-process.exit();
+
 //console.log(options.url);
 const socket = io(options.url);
 socket.on('connect', async () => {
     socket.emit('query', { queryId, query });
+    terminal.clear();
+    const progressBar = term.progressBar({
+        width: 80,
+        title: 'File Scan:',
+        eta: true,
+        percent: true,
+    });
     let job = new CronJob('*/5 * * * * *', () => {
         socket.emit('progress', { queryId, query }, (response) => {
             if (response.all != 0) {
                 if (response.done == response.all) {
                     job.stop();
                 }
-                terminal.clear();
-                terminal(response.done + '/' + response.all);
+                progressBar.update(response.done / response.all);
+                //terminal.clear();
+                //terminal("Scan Files(done/all): "+response.done + '/' + response.all);
             }
         });
     });
     job.start();
     socket.on('query-return', (response) => {
-        terminal();
+        terminal('\n[Query Done]');
         /* console.log({
             queryId: response.queryId,
             archiveFile: response.archiveFile,
         });*/
-        if (options.webdav) {
+        if (options.giveaway == 'local') {
+            terminal(
+                'Giveaway! Move the result to ' + options.destination + '\n'
+            );
+            fsPromises.rename(response.archive, options.destination);
+            terminal('[ALL DONE]\n');
+        } else if (options.giveaway == 'webdav') {
+            terminal(
+                'Giveaway! Start uploading to ' + options.destination + '\n'
+            );
             socket.emit(
                 'webdav',
                 {
@@ -137,7 +173,7 @@ socket.on('connect', async () => {
                 },
                 (response) => {
                     //console.log("webdab",response);
-                    console.log('[ALL DONE]');
+                    terminal('[ALL DONE]\n');
                 }
             );
         }
