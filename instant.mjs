@@ -7,9 +7,6 @@ import { CronJob } from 'cron';
 import uniqid from 'uniqid';
 import path from 'path';
 import fs from 'fs';
-import EventEmitter from 'events';
-class MonitorEvent extends EventEmitter {}
-const monitorEvent = new MonitorEvent();
 import { Command, Option } from 'commander/esm.mjs';
 const program = new Command();
 const { terminal } = terminal_kit;
@@ -33,7 +30,7 @@ program
     .addOption(
         new Option('-l, --lang <lang>', 'Language').choices(['ja', 'en'])
     )
-    .option('-m, --mask', 'JSON Mask (https://www.npmjs.com/package/json-mask)')
+    .option('-m, --mask <mask>', 'JSON Mask (https://www.npmjs.com/package/json-mask)')
     .option('--ignore-retweet', 'Ignore Retweet')
     .option('--only-retweet', 'Only Retweet')
     .addOption(
@@ -41,8 +38,10 @@ program
             .choices(['no', 'local', 'webdav'])
             .default('local', 'Copy to anywhere in the local')
     )
+    .option('--jst', 'Convert create_at to JST')
     .option('-d, --destination <url-or-path>', 'Save Location')
-    .option('-n, --user <username>', 'Username for Webdav Server');
+    .option('-n, --user <username>', 'Username for Webdav Server')
+    .option('-v, --verbose', 'Output detailed stats and errors');
 
 program.parse();
 const options = program.opts();
@@ -62,13 +61,15 @@ if (options.giveaway == 'webdav') {
     terminal('\nThank you for telling me your password! 😋\n');
 } else if (options.giveaway == 'local') {
     try {
-        if (!fs.existsSync(options.destination)) {
-            fs.mkdirSync(options.destination, { recursive: true });
-        }
         if (!options.destination) {
             options.destination = path.normalize('~/exhaustive-twitter');
         } else {
-            options.destination = path.normalize(options.destination);
+            options.destination = path.isAbsolute(options.destination)
+                ? options.destination
+                : path.resolve(process.cwd(), options.destination);
+        }
+        if (!fs.existsSync(options.destination)) {
+            fs.mkdirSync(options.destination, { recursive: true });
         }
     } catch (e) {
         terminal('Error:' + e + '\n');
@@ -102,7 +103,8 @@ const query = {
     //urls:[""],
     //lang: 'ja',
     filters: [], //ignore_retweet, only_retweet
-    mask: options.mask,
+    verbose: options.verbose ? true : false,
+    jst: options.jst ? true : false,
 };
 if (options.mask) {
     query.mask = options.mask;
@@ -119,49 +121,58 @@ if (options.ignoreRetweet) {
 if (options.onlyRetweet) {
     query.filters.push('only_retweet');
 }
+if (options.giveaway == 'local') {
+    query.giveaway = 'local';
+    query.destination = options.destination;
+} else if (options.giveaway == 'webdav') {
+    query.giveaway = 'webdav';
+    query.destination = options.destination;
+    query.password = password;
+} else {
+    query.giveaway = 'no';
+}
 const queryId = monitorId + '_' + uniqid();
 console.log(query, queryId);
 
 //console.log(options.url);
 const socket = io(options.url);
+socket.on('disconnect', async () => {
+    terminal.processExit();
+});
 socket.on('connect', async () => {
-    socket.emit('query', { queryId, query });
-    terminal.clear();
-    const progressBar = term.progressBar({
-        width: 80,
-        title: 'File Scan:',
-        eta: true,
-        percent: true,
-    });
-    let job = new CronJob('*/5 * * * * *', () => {
-        socket.emit('progress', { queryId, query }, (response) => {
-            if (response.all != 0) {
-                if (response.done == response.all) {
-                    job.stop();
-                }
-                progressBar.update(response.done / response.all);
-                //terminal.clear();
-                //terminal("Scan Files(done/all): "+response.done + '/' + response.all);
-            }
-        });
-    });
-    job.start();
-    socket.on('query-return', (response) => {
-        terminal('\n[Query Done]');
-        /* console.log({
-            queryId: response.queryId,
-            archiveFile: response.archiveFile,
-        });*/
+    socket.emit('query', { queryId, query }, async (response) => {
+        //progressBar.stop();
+        job.stop();
+        terminal.clear();
+        terminal('\n[Query Done]\n');
+        /*
         if (options.giveaway == 'local') {
-            terminal(
-                'Giveaway! Move the result to ' + options.destination + '\n'
+            terminal('[Save File] Transferring...\n');
+            //fs.promises.rename(response.archiveFile, options.destination);
+            const origin = await fs.promises.open(response.archiveFile, 'r');
+            const destination = await fs.promises.open(
+                path.join(
+                    options.destination,
+                    options.id +
+                        '_' +
+                        DateTime.now().toFormat('yyyyMMddHHmm') +
+                        '.tgz'
+                ),
+                'w+'
             );
-            fsPromises.rename(response.archive, options.destination);
-            terminal('[ALL DONE]\n');
+            origin
+                .createReadStream()
+                .pipe(destination.createWriteStream())
+                .on('finish', (err) => {
+                    terminal(
+                        'Giveaway! Move the result to ' +
+                            options.destination +
+                            '\n'
+                    );
+                    terminal('[ALL DONE]\n');
+                });
         } else if (options.giveaway == 'webdav') {
-            terminal(
-                'Giveaway! Start uploading to ' + options.destination + '\n'
-            );
+            terminal('[WebDAV] Uploading...\n');
             socket.emit(
                 'webdav',
                 {
@@ -169,15 +180,84 @@ socket.on('connect', async () => {
                     name: options.name,
                     user: options.user,
                     password: password,
-                    url: options.destination + options.id + '.tgz',
+                    url:
+                        options.destination +
+                        options.id +
+                        '_' +
+                        DateTime.now().toFormat('yyyyMMddHHmm') +
+                        '.tgz',
                 },
-                (response) => {
-                    //console.log("webdab",response);
+                (responseWebDAV) => {
+                    terminal(
+                        'Giveaway! Start uploading to ' +
+                            options.destination +
+                            '\n'
+                    );
                     terminal('[ALL DONE]\n');
                 }
             );
-        }
+        }*/
     });
+    terminal.clear();
+    const progressBar = terminal.progressBar({
+        width: 70,
+        title: 'Scanning:',
+        eta: true,
+        percent: true,
+        y: 1,
+    });
+    const transferBar = terminal.progressBar({
+        width: 70,
+        title: 'Transfer:',
+        eta: true,
+        percent: true,
+        y: 2,
+    });
+    const glueBar = terminal.progressBar({
+        width: 70,
+        title: 'Concat  :',
+        eta: true,
+        percent: true,
+        y: 3,
+    });
+    terminal
+        .moveTo(0, 4)
+        .defaultColor('Compress: ')
+        .yellow('...')
+        .eraseLineAfter();
+    const uploadBar = terminal.progressBar({
+        width: 70,
+        title: 'Upload  :',
+        eta: true,
+        percent: true,
+        y: 5,
+    });
+    let job = new CronJob('* * * * * *', () => {
+        socket.emit('progress', { queryId, query }, (response) => {
+            if (response.all != 0) {
+                if (
+                    response.done == response.all &&
+                    response.transfer.done == response.transfer.all &&
+                    response.glue.done == response.glue.all
+                ) {
+                    job.stop();
+                }
+                progressBar.update(response.done / response.all);
+                transferBar.update(
+                    response.transfer.done / response.transfer.all
+                );
+                glueBar.update(response.glue.done / response.glue.all);
+                terminal
+                    .moveTo(11, 4)
+                    .yellow(response.compress)
+                    .eraseLineAfter();
+                uploadBar.update(response.upload.done / response.upload.all);
+                //terminal.clear();
+                //terminal("Scan Files(done/all): "+response.done + '/' + response.all);
+            }
+        });
+    });
+    job.start();
 });
 let doubleCTRL_C = false;
 terminal.on('key', async function (name, matches, data) {
@@ -188,11 +268,13 @@ terminal.on('key', async function (name, matches, data) {
             let yn = await terminal.yesOrNo({ yes: ['y', 'ENTER'], no: ['n'] })
                 .promise;
             if (yn) {
+                terminal.clear();
                 terminal.processExit();
             } else {
                 doubleCTRL_C = false;
             }
         } else {
+            terminal.clear();
             terminal.processExit();
         }
     }

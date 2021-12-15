@@ -32,7 +32,9 @@ npx -p exhaustive-twitter-crawler -- instant <option>
 | --lang \<lang\>       | ja | 言語(jaとenのみ対応、無指定も可) |
 | --ignore-retweet      | | リツイートを結果に含めない |
 | --only-retweet        | | リツイートのみ取得する |
+| --jst                 | | create_atを日本時間にする |
 | --mask \<mask\>       | id_str,text,user(id_str,name,screen_name) | 結果に残すJSONフィールドの指定([書き方](https://www.npmjs.com/package/json-mask)) |
+| --verbose             | | 結果にエラーやファイル毎統計情報を含める |
 
 * `mask`の指定がない場合はデフォルトで以下のマスクがかけられます。
   * `id_str,text,user(id_str,name,screen_name),is_quote_status,quoted_status_id_str,retweeted_status(id_str,user(id_str,name,screen_name)),entities(hashtags,user_mentions,urls),lang,timestamp_ms,created_at`
