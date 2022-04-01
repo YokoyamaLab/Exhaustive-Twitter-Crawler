@@ -120,14 +120,14 @@ if (options.giveaway == 'local') {
 }
 const queryId = monitorId + '_' + uniqid();
 console.log(query, queryId);
-
+const commandLine = process.argv.join(' ');
 //console.log(options.url);
 const socket = io(options.url);
 socket.on('disconnect', async () => {
     terminal.processExit();
 });
 socket.on('connect', async () => {
-    socket.emit('query', { queryId, query }, async (response) => {
+    socket.emit('query', { queryId, query, commandLine }, async (response) => {
         //progressBar.stop();
         job.stop();
         terminal.clear();

@@ -6,7 +6,7 @@
 
 　コマンドライン引数に検索条件などをすべて指定して、一気に結果集約・圧縮・指定場所にアップロードまで行う。
 
-```
+```え
 npx -p exhaustive-twitter-crawler -- instant <option>
 ```
 
@@ -27,7 +27,7 @@ npx -p exhaustive-twitter-crawler -- instant <option>
 | スイッチ  | 例(初期値) | 説明 |
 | ------------- | ------------- | ------------- |
 | --term \<from-to\>    | 2020/05/01T00:00-2021/07/01T00:00 | 〈必須〉クロール期間 YYYY/MM/DDTHH:MMにて指定  |
-| --keywords            | コロナ マスク 自粛 | 〈必須〉キーワードリスト(半角スペース区切り) |
+| --keywords            | コロナ マスク 自粛 | 〈必須〉キーワードリスト(半角スペース区切りもしくはJSON) |
 | --keywords-match      | text-or | キーワードのOR検索(text-or)かAND検索(text-and)かを指定、RegExpで正規表現も可 |
 | --lang \<lang\>       | ja | 言語(jaとenのみ対応、無指定も可) |
 | --ignore-retweet      | | リツイートを結果に含めない |
@@ -38,7 +38,7 @@ npx -p exhaustive-twitter-crawler -- instant <option>
 
 * `mask`の指定がない場合はデフォルトで以下のマスクがかけられます。
   * `id_str,text,user(id_str,name,screen_name),is_quote_status,quoted_status_id_str,retweeted_status(id_str,user(id_str,name,screen_name)),entities(hashtags,user_mentions,urls),lang,timestamp_ms,created_at`
-
+* `keywords`は`keywords-match`が`text-or`の時、`[[\"A\",\"B\"],[\"C\",\"D\"]]`と指定する事で、 **(A and B) or (C and D)** と解釈されます。`text-and`の時は **(A or B) and (C or D)** となります。
 
 #### 結果取得( `--giveaway local` の場合)
 
