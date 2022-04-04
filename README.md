@@ -19,8 +19,9 @@ npx -p exhaustive-twitter-crawler -- instant <option>
 | --id \<identifier\>   | my-query | 〈必須〉クエリ識別ID (ファイル名に使える文字のみ)  |
 | --url \<url\>         | wss://query-server:1111/ | 〈必須〉全量処理サーバ(URLは管理者に聞いてください) |
 | --output \<format\>   |  daily | 結果フォーマット、日毎1ファイル(daily)もしくはアーカイブそのまま(as-is) |
-| --giveaway \<method\> | no | 結果の送信方法(no, local, webdav, curl)
-| --notification \<email\> |  | 処理進行を通知するメールアドレス
+| --giveaway \<method\> | no | 結果の送信方法(no, local, webdav, curl) |
+| --notification \<email\> |  | 処理進行を通知するメールアドレス |
+| --token \<token\> |  | リモートアクセス時に必要なアクセストークン |
 
 #### 検索関連
 
@@ -53,9 +54,24 @@ npx -p exhaustive-twitter-crawler -- instant <option>
 | --destination \<url\> | https://web-dav-server:2222/paht/to/dir/ | アップロード先(WebDAVのURL) | 
 | --user  \<username\>  | shohei | WebDAVサーバにログインするユーザ名(パスワードは実行後に聞かれます)
 
-### 実行例
+### 実行例(ローカルアクセス)
   
 * 2021年10月25日から11月4日においてハロウィンもしくはコロナが含まれた日本語のツイートのうちリツイートではないものを検索しWebDAVサーバへアップロードしたい。
 ```
-npx -p exhaustive-twitter-crawler instant --id yokoyama20211208 --term 2021/10/25T00:00-2021/11/5T00:00 --keywords ハロウィン 仮装 --keywords-match text-or --ignore-retweet --url wss://query-server:1111/ --webdav --destination https://web-dav-server:2222/result/ --user shohei
+npx -p exhaustive-twitter-crawler instant --id yokoyama20211208 --term 2021/10/25T00:00-2021/11/5T00:00 --keywords ハロウィン 仮装 --keywords-match text-or --ignore-retweet --url wss://query-server:1111/ --webdav --destination https://web-dav-server:2222/result/ --user username-for-web-dav-server
+```
+
+### 実行例(外部サーバから)
+
+* まず自分のIDを取得
+```
+npx -y -p exhaustive-twitter-crawler -- get-id
+```
+* IDが画面に表示されるのでそれをサーバ担当へ通知しトークンをもらう。
+* トークン一つにつき一つのクエリが出来ます。またget-idを行った環境からのみ有効です。
+* トークンを使ってクエリを発行する。
+  * ただし、web-dav-serverは自分で準備する、ngrok-gateway-serverのURLは公開していないので担当者に聞く
+
+```
+npx -y -p exhaustive-twitter-crawler -- instant --id april-fool --term 2022/04/01T00:00-2022/04/02T00:00 --keywords エイプリルフール --keywords-match text-or --mask text,id,user\(id\),created_at,timestamp_ms,retweeted_status\(text,id_str,user\(id_str\),created_at\) --url wss://ngrok-gateway-server --giveaway webdav --destination https://web-dav-server:2222/result/ --user shohei --token TKNxxxxxxxxxxxxxxxx
 ```

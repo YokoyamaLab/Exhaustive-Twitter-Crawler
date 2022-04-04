@@ -1,23 +1,26 @@
 {
     "name": "exhaustive-twitter-crawler",
-    "version": "0.1.0",
+    "version": "0.2.5",
     "description": "",
     "main": "instant.mjs",
     "scripts": {
+        "instant": "node ./instant.mjs",
+        "get-id": "node ./id.mjs"
     },
     "bin": {
-        "instant": "./instant.mjs"
+        "instant": "./instant.mjs",
+        "get-id": "./id.mjs"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/YokoyamaLab/parallel-full-twitter-monitor.git"
+        "url": "git+https://github.com/YokoyamaLab/Exhaustive-Twitter-Crawler.git"
     },
     "author": "Shohei Yokoyama",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/YokoyamaLab/parallel-full-twitter-monitor/issues"
+        "url": "https://github.com/YokoyamaLab/Exhaustive-Twitter-Crawler/issues"
     },
-    "homepage": "https://github.com/YokoyamaLab/parallel-full-twitter-monitor#readme",
+    "homepage": "https://github.com/YokoyamaLab/Exhaustive-Twitter-Crawler#readme",
     "dependencies": {
         "commander": "^8.3.0",
         "cron": "^1.8.2",
