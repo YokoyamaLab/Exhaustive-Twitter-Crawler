@@ -1,15 +1,18 @@
 {
     "name": "exhaustive-twitter-crawler",
-    "version": "0.2.5",
+    "version": "0.4.1",
     "description": "",
     "main": "instant.mjs",
     "scripts": {
         "instant": "node ./instant.mjs",
-        "get-id": "node ./id.mjs"
+        "get-id": "node ./id.mjs",
+        "set-tokens": "node ./tokens.mjs"
     },
     "bin": {
         "instant": "./instant.mjs",
-        "get-id": "./id.mjs"
+        "get-id": "./id.mjs",
+        "set-tokens": "./tokens.mjs",
+        "dav": "./webdav.mjs"
     },
     "repository": {
         "type": "git",
@@ -22,11 +25,15 @@
     },
     "homepage": "https://github.com/YokoyamaLab/Exhaustive-Twitter-Crawler#readme",
     "dependencies": {
-        "commander": "^8.3.0",
-        "cron": "^1.8.2",
-        "luxon": "^2.1.1",
-        "socket.io-client": "^4.4.0",
-        "terminal-kit": "^2.2.4",
-        "uniqid": "^5.4.0"
+        "commander": "^9.1",
+        "cron": "^1.8",
+        "crypto-random-string": "^4.0.0",
+        "luxon": "^2.3",
+        "ngrok": "^4.3",
+        "p-retry": "^5.1.0",
+        "socket.io-client": "^4.4",
+        "terminal-kit": "^2.4",
+        "uniqid": "^5.4",
+        "webdav-server": "^2.6.2"
     }
 }

@@ -4,201 +4,303 @@ import { io } from 'socket.io-client';
 import terminal_kit from 'terminal-kit';
 import { DateTime } from 'luxon';
 import { CronJob } from 'cron';
-import uniqid from 'uniqid';
+//import uniqid from 'uniqid';
+import { Worker, isMainThread, workerData } from 'worker_threads';
+import ngrok from 'ngrok';
+import cryptoRandomString from 'crypto-random-string';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { Command, Option } from 'commander/esm.mjs';
 const program = new Command();
 const { terminal } = terminal_kit;
 const HOME_DIR = process.env[process.platform == 'win32' ? 'USERPROFILE' : 'HOME'];
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 program
     .requiredOption('-i, --id <id>', 'Query Identifier')
-    .requiredOption('-u, --url <url>', 'URL of WebSocket Server')
+    .option('-u, --url <url>', 'URL of WebSocket Server', 'wss://tokyo.jp.ngrok.io')
     .requiredOption('-t, --term <yyyy/mm/ddThh:mm-yyyy/mm/ddThh:mm>', 'Search Term')
     .addOption(new Option('--keywords-match <method>', 'Text Match Method').choices(['text-and', 'text-or', 'RegExp']).default('text-or', 'Text OR'))
-    .requiredOption('-k, --keywords <word...>', 'Comma Separated Search Keywords')
+    .option('--no-keywords', 'Fetch All Tweets!')
+    .option('-k, --keywords <word...>', 'Comma Separated Search Keywords')
     .addOption(new Option('-l, --lang <lang>', 'Language').choices(['ja', 'en']))
     .option('-m, --mask <mask>', 'JSON Mask (https://www.npmjs.com/package/json-mask)')
-    .option('--ignore-retweet', 'Ignore Retweet')
-    .option('--only-retweet', 'Only Retweet')
-    .addOption(new Option('-g, --giveaway <method>', 'Upload Method').choices(['no', 'local', 'webdav']).default('local', 'Copy to anywhere in the local'))
+    .option('--ignore-retweet', 'Filter: Ignore Retweet')
+    .option('--only-retweet', 'Filter: Only Retweet')
+    .option('--has-geo', 'Filter: Has Geotag')
+    .addOption(new Option('-g, --giveaway <method>', 'Upload Method').choices(['no', 'local', 'webdav', 'here']).default('here', 'Download result to the current directory'))
     .option('--jst', 'Convert create_at to JST')
-    .option('-d, --destination <url-or-path>', 'Save Location')
-    .option('-n, --user <username>', 'Username for Webdav Server')
-    .option('-a, --token <token>', 'Access Token for remote query')
+    .option('-d, --destination <url-or-path>', '(giveawa=local|webdav) Save Location')
+    .option('-n, --user <username>', '(giveaway=webdav) Username for Webdav Server')
+    .option('-p, --port <port>', '(giveaway=here) Port Number of this machine', 4580)
     .option('-v, --verbose', 'Output detailed stats and errors');
-
 program.parse();
 const options = program.opts();
-
-let password;
-if (options.giveaway == 'webdav') {
-    if (!options.destination) {
-        terminal('ERROR: ' + 'WebDAV URL NOT FOUND. Please specify --destination.\n');
-        terminal.processExit();
-    }
-    terminal('Password for the webdav server:');
-    password = await terminal.inputField({
-        echoChar: true,
-    }).promise;
-    terminal('\nThank you for telling me your password! 😋\n');
-} else if (options.giveaway == 'local') {
-    try {
-        if (!options.destination) {
-            options.destination = path.normalize(path.join(HOME_DIR, '/exhaustive-twitter'));
-        } else {
-            options.destination = path.isAbsolute(options.destination) ? options.destination : path.resolve(process.cwd(), options.destination);
-        }
-        if (!fs.existsSync(options.destination)) {
-            fs.mkdirSync(options.destination, { recursive: true });
-        }
-    } catch (e) {
-        terminal('Error:' + e + '\n');
-        terminal.processExit();
-    }
-}
-
-
-const monitorIdFile = path.join(HOME_DIR, '.exhaustive-twitter');
-const monitorId = fs.existsSync(monitorIdFile) ? fs.readFileSync(monitorIdFile, { encoding: 'utf8' }) : uniqid('ETC');
-if (!fs.existsSync(monitorIdFile)) {
-    fs.writeFileSync(monitorIdFile, monitorId, { flag: 'w+' });
-}
-
-const term = options.term.split('-').map((term) => {
-    const dt = term.split('T');
-    return dt[0] + ' ' + dt[1];
-});
-if (options.keywords.length == 1) {
-    try {
-        console.log('JSON Keyword Mode');
-        options.keywords = JSON.parse(options.keywords[0]);
-    } catch (e) {
-        //Nothing To Do
-    }
-}
-const query = {
-    title: options.id,
-    from: DateTime.fromFormat(term[0], 'yyyy/MM/dd HH:mm').toISO(),
-    to: DateTime.fromFormat(term[1], 'yyyy/MM/dd HH:mm').toISO(),
-    keywordsMatch: options.keywordsMatch, //,"text-and" or "RegExp"
-    keywords: options.keywords,
-    //hashtagsMatch:"text-or", //,"text-and" or "RegExp"
-    //hashtags:["コロナ"],
-    //urlsMatch:"text-or", //,"text-and" or "RegExp"
-    //urls:[""],
-    //lang: 'ja',
-    filters: {}, //ignore_retweet, only_retweet
-    verbose: options.verbose ? true : false,
-    jst: options.jst ? true : false,
-};
-if (options.mask) {
-    query.mask = options.mask;
-} else {
-    query.mask = 'id_str,text,user(id_str,name,screen_name),is_quote_status,quoted_status_id_str,retweeted_status(id_str,user(id_str,name,screen_name)),entities(hashtags,user_mentions,urls),lang,timestamp_ms,created_at';
-}
-if (options.lang) {
-    query.lang = options.lang;
-}
-if (options.ignoreRetweet) {
-    //query.filters.push('ignore_retweet');
-    query.filters['ignore_retweet'] = true;
-}
-if (options.onlyRetweet) {
-    // query.filters.push('only_retweet');
-    query.filters['only_retweet'] = true;
-}
-if (options.giveaway == 'local') {
-    query.giveaway = 'local';
-    query.destination = options.destination;
-} else if (options.giveaway == 'webdav') {
-    query.giveaway = 'webdav';
-    query.destination = options.destination;
-    query.user = options.user;
-    query.password = password;
-} else {
-    query.giveaway = 'no';
-}
-const token = options.token ? options.token : uniqid();
-const queryId = monitorId + '_' + token;
-console.log(query, queryId);
-const commandLine = process.argv.join(' ');
-//console.log(options.url);
-const socket = io(options.url);
-socket.on('disconnect', async () => {
-    terminal.processExit();
-});
-let stopped = false;
-socket.on('connect', async () => {
-    socket.emit('query', { queryId, query, commandLine }, async (response) => {
-        //progressBar.stop();
-        job.stop();
-        stopped = true;
-        terminal.clear();
-        terminal.eraseDisplay();
-        if (response.success) {
-            terminal('[Query Done]');
-            terminal.nextLine(1);
-        } else {
-            terminal.bgColorRgb(244, 67, 54);
-            terminal.colorRgb(232, 234, 246);
-            terminal('[Query Error]');
-            terminal.defaultColor();
-            terminal.bgDefaultColor();
-            terminal.nextLine(1);
-            terminal(response.message);
-            terminal.nextLine(1);
-        }
-    });
-    terminal.clear();
-    const progressBar = terminal.progressBar({
-        width: 70,
-        title: 'Scanning:',
-        eta: true,
-        percent: true,
-        y: 1,
-    });
-    const transferBar = terminal.progressBar({
-        width: 70,
-        title: 'Transfer:',
-        eta: true,
-        percent: true,
-        y: 2,
-    });
-    const glueBar = terminal.progressBar({
-        width: 70,
-        title: 'Concat  :',
-        eta: true,
-        percent: true,
-        y: 3,
-    });
-    terminal.moveTo(0, 4).defaultColor('Compress: ').yellow('...').eraseLineAfter();
-    const uploadBar = terminal.progressBar({
-        width: 70,
-        title: 'Upload  :',
-        eta: true,
-        percent: true,
-        y: 5,
-    });
-    let job = new CronJob('*/2 * * * * *', () => {
-        socket.emit('progress', { queryId, query }, (response) => {
-            //jobOnGoing = false;
-            if (response.all != 0 && !stopped) {
-                if (response.done == response.all && response.transfer.done == response.transfer.all && response.glue.done == response.glue.all) {
-                    job.stop();
-                }
-                progressBar.update(response.done / response.all);
-                transferBar.update(response.transfer.done / response.transfer.all);
-                glueBar.update(response.glue.done / response.glue.all);
-                terminal.moveTo(11, 4).yellow(response.compress).eraseLineAfter();
-                uploadBar.update(response.upload.done / response.upload.all);
-                //terminal.clear();
-                //terminal("Scan Files(done/all): "+response.done + '/' + response.all);
-            }
+try {
+    let password = null;
+    if (options.giveaway == 'here') {
+        options.giveaway = 'webdav';
+        const aUrl = await ngrok.connect(options.port);
+        const aPath = 'DIR' + cryptoRandomString({ length: 36, type: 'alphanumeric' });
+        options.destination = aUrl + '/' + aPath;
+        const worker = new Worker(path.join(__dirname, './workers/webdav.mjs'), {
+            workerData: {
+                url: aUrl,
+                path: aPath,
+                port: options.port,
+            },
         });
+    } else if (options.giveaway == 'webdav') {
+        if (!options.destination) {
+            terminal('ERROR: ' + 'WebDAV URL NOT FOUND. Please specify --destination.\n');
+            terminal.processExit();
+        }
+        terminal('Password for the webdav server:');
+        password = await terminal.inputField({
+            echoChar: true,
+        }).promise;
+        terminal('\nThank you for telling me your password! 😋\n');
+    } else if (options.giveaway == 'local') {
+        try {
+            if (!options.destination) {
+                options.destination = path.normalize('~/exhaustive-twitter');
+            } else {
+                options.destination = path.isAbsolute(options.destination) ? options.destination : path.resolve(process.cwd(), options.destination);
+            }
+            if (!fs.existsSync(options.destination)) {
+                fs.mkdirSync(options.destination, { recursive: true });
+            }
+        } catch (e) {
+            terminal('Error:' + e + '\n');
+            terminal.processExit();
+        }
+    }
+    const instantConfigFile = path.join(HOME_DIR, '.exhaustive-twitter.json');
+    //ファイルがなければ停止："get-id"の実行を勧める
+    if (!fs.existsSync(instantConfigFile)) {
+        terminal.bgColorRgb(244, 67, 54);
+        terminal.colorRgb(232, 234, 246);
+        terminal('[Config Error] ClientIDが見つかりません。');
+        terminal.defaultColor();
+        terminal.bgDefaultColor();
+        terminal('\n以下のコマンドでClient Idを生成し、それを管理者に伝えTokensを発行してもらってください。\n\n');
+        terminal('npx -y -p exhaustive-twitter-crawler@latest get-id\n\n');
+        terminal.processExit();
+        process.exit();
+    }
+
+    if (options.term.split('~').length != 2) {
+        throw new RangeError('-termは"->"区切りで検索期間の最初と最後の日時をISO8601形式で記述してください。');
+    }
+    const term = options.term.split('~').map((term) => {
+        const dt = DateTime.fromISO(term);
+        if (!dt.isValid) {
+            throw new RangeError("日付 ' " + term + " ' は無効です。理由：" + dt.invalidReason);
+        }
+        return dt;
+        //const dt = term.split('T');
+        //return dt[0] + ' ' + dt[1];
     });
-    job.start();
-});
+    if (options.keywords === false) {
+        //no-keywordsモード
+        options.keywords = null;
+    } else if (!options.keywords) {
+        throw new RangeError('--keywordsを指定しない場合(=全ツイート取得)は--no-keywordsスイッチを指定してください。');
+    } else {
+        if (options.keywords.length == 1) {
+            try {
+                options.keywords = JSON.parse(options.keywords[0]);
+            } catch (e) {
+                //Nothing To Do
+            }
+        }
+    }
+    const query = {
+        title: options.id,
+        //from: DateTime.fromFormat(term[0], 'yyyy/MM/dd HH:mm').toISO(),
+        //to: DateTime.fromFormat(term[1], 'yyyy/MM/dd HH:mm').toISO(),
+        from: term[0].toISO(),
+        to: term[1].toISO(),
+        keywordsMatch: options.keywordsMatch, //,"text-and" or "RegExp"
+        keywords: options.keywords,
+        //hashtagsMatch:"text-or", //,"text-and" or "RegExp"
+        //hashtags:["コロナ"],
+        //urlsMatch:"text-or", //,"text-and" or "RegExp"
+        //urls:[""],
+        //lang: 'ja',
+        filters: {}, //ignore_retweet, only_retweet
+        verbose: options.verbose ? true : false,
+        jst: options.jst ? true : false,
+    };
+    if (options.mask) {
+        query.mask = options.mask;
+    } else if (options.hasGeo) {
+        query.mask = 'id_str,text,user(id_str,name,screen_name,location),is_quote_status,quoted_status_id_str,retweeted_status(id_str,user(id_str,name,screen_name,location)),entities(hashtags,user_mentions,urls),geo,place,coordinates,lang,timestamp_ms,created_at';
+    } else {
+        query.mask = 'id_str,text,user(id_str,name,screen_name),is_quote_status,quoted_status_id_str,retweeted_status(id_str,user(id_str,name,screen_name)),entities(hashtags,user_mentions,urls),lang,timestamp_ms,created_at';
+    }
+    if (options.lang) {
+        query.lang = options.lang;
+    }
+    if (options.keywords === false) {
+        query.filters['no_keywords'] = true;
+    }
+    if (options.ignoreRetweet) {
+        query.filters['ignore_retweet'] = true;
+    }
+    if (options.onlyRetweet) {
+        query.filters['only_retweet'] = true;
+    }
+    if (options.hasGeo) {
+        query.filters['has_geo'] = true;
+    }
+    if (options.giveaway == 'local') {
+        query.giveaway = 'local';
+        query.destination = options.destination;
+    } else if (options.giveaway == 'webdav') {
+        query.giveaway = 'webdav';
+        query.destination = options.destination;
+        if (password != null) {
+            query.user = options.user;
+            query.password = password;
+        }
+    } else {
+        query.giveaway = 'no';
+    }
+
+    //ファイルが有ってtokensの長さが0なら停止："set-tokens"の実行を勧める
+    const instantConfig = JSON.parse(fs.readFileSync(instantConfigFile, { encoding: 'utf8' }));
+    if (instantConfig.tokens.length == 0) {
+        terminal('\n');
+        terminal.bgColorRgb(244, 67, 54);
+        terminal.colorRgb(232, 234, 246);
+        terminal('[Token Error] Tokenの残りがありません。以下のClient IDを管理者へ伝え、Tokensを発行してもらってください。');
+        terminal.defaultColor();
+        terminal.bgDefaultColor();
+        terminal('\nYour Client ID is ' + instantConfig.clientId + '\n\n');
+        terminal.processExit();
+        process.exit();
+    }
+    const token = instantConfig.tokens.pop();
+    fs.writeFileSync(instantConfigFile, JSON.stringify(instantConfig), { flag: 'w+' });
+
+    const queryId = instantConfig.clientId + '_' + token;
+    //console.log(query, queryId);
+    const commandLine = process.argv.join(' ');
+    //console.log(options.url);
+    const socket = io(options.url);
+    socket.on('disconnect', async () => {
+        terminal.processExit();
+    });
+    let stopped = false;
+    socket.on('connect', async () => {
+        socket.emit('query', { queryId, query, commandLine }, async (response) => {
+            //progressBar.stop();
+            job.stop();
+            stopped = true;
+            terminal.clear();
+            terminal.eraseDisplay();
+            const tsStart = DateTime.fromMillis(response.stats.tsStart);
+            const tsFinish = DateTime.fromMillis(response.stats.tsFinish);
+            if (response.success) {
+                /*
+            terminal('[Cool Down]\n');
+            await ((ms) => {
+                return new Promise((r) => setTimeout(r, ms));
+            })(20000);
+            */
+                terminal('[Query Done]\n');
+                //console.log(response.stats);
+                const pad = (num, keta) => {
+                    return num.length > keta ? num : (' '.repeat(keta) + num).slice(keta * -1);
+                };
+                terminal.table(
+                    [
+                        ['Hit数', pad(response.stats.nHits, 10) + ' tweets'],
+                        ['走査数', pad(response.stats.nTweets, 10) + ' tweets'],
+                        ['秒間処理数', pad(Math.round(response.stats.TPS), 10) + ' tweets/sec'],
+                        ['検索時間', tsFinish.diff(tsStart, ['days', 'hours', 'minutes', 'seconds']).toHuman()],
+                    ],
+                    {
+                        hasBorder: true,
+                        borderAttr: { color: 'blue' },
+                        fit: true,
+                    }
+                );
+            } else {
+                terminal('\n');
+                terminal.bgColorRgb(244, 67, 54);
+                terminal.colorRgb(232, 234, 246);
+                terminal('[Query Error]');
+                terminal.defaultColor();
+                terminal.bgDefaultColor();
+                terminal('\n' + response.message + '\n\n');
+            }
+            terminal.processExit();
+        });
+        terminal.clear();
+        const progressBar = terminal.progressBar({
+            width: 70,
+            title: 'Scanning:',
+            eta: true,
+            percent: true,
+            y: 1,
+        });
+        const transferBar = terminal.progressBar({
+            width: 70,
+            title: 'Transfer:',
+            eta: true,
+            percent: true,
+            y: 2,
+        });
+        const glueBar = terminal.progressBar({
+            width: 70,
+            title: 'Concat  :',
+            eta: true,
+            percent: true,
+            y: 3,
+        });
+        terminal.moveTo(0, 4).defaultColor('Compress: ').yellow('...').eraseLineAfter();
+        const uploadBar = terminal.progressBar({
+            width: 70,
+            title: 'Upload  :',
+            eta: true,
+            percent: true,
+            y: 5,
+        });
+        let job = new CronJob('*/2 * * * * *', () => {
+            socket.emit('progress', { queryId, query }, (response) => {
+                //jobOnGoing = false;
+                if (response.all != 0 && !stopped) {
+                    /*if (response.done == response.all && response.transfer.done == response.transfer.all && response.glue.done == response.glue.all) {
+                    job.stop();
+                }*/
+                    progressBar.update(response.done / response.all);
+                    transferBar.update(response.transfer.done / response.transfer.all);
+                    glueBar.update(response.glue.done / response.glue.all);
+                    terminal.moveTo(11, 4).yellow(response.compress).eraseLineAfter();
+                    uploadBar.update(response.upload.done / response.upload.all);
+                    //terminal.clear();
+                    //terminal("Scan Files(done/all): "+response.done + '/' + response.all);
+                }
+            });
+        });
+        job.start();
+    });
+} catch (e) {
+    if (e instanceof RangeError) {
+        terminal.bgColorRgb(244, 67, 54);
+        terminal.colorRgb(232, 234, 246);
+        terminal('[Input Error] 検索条件の指定が間違っています');
+        terminal.defaultColor();
+        terminal.bgDefaultColor();
+        terminal('\n' + e.message + '\n\n');
+        terminal.processExit();
+        process.exit();
+    } else {
+        throw e;
+    }
+}
 let doubleCTRL_C = false;
 terminal.on('key', async function (name, matches, data) {
     if (name === 'CTRL_C') {

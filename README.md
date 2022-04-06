@@ -27,12 +27,14 @@ npx -p exhaustive-twitter-crawler -- instant <option>
 
 | スイッチ  | 例(初期値) | 説明 |
 | ------------- | ------------- | ------------- |
-| --term \<from-to\>    | 2020/05/01T00:00-2021/07/01T00:00 | 〈必須〉クロール期間 YYYY/MM/DDTHH:MMにて指定  |
-| --keywords            | コロナ マスク 自粛 | 〈必須〉キーワードリスト(半角スペース区切りもしくはJSON) |
+| --term \<from-to\>    | 2020-05-01T00:00~2021-07-01T00:00 | 〈必須1〉クロール期間(最初と最後)をチルダ(~)区切りのISO8601形式にて指定  |
+| --keywords            | コロナ マスク 自粛 | 〈必須2〉キーワードリスト(半角スペース区切りもしくはJSON) |
+| --no-keywords         | | 〈必須2〉keywordsを指定しない時は必ず--no-keywordsを指定する |
 | --keywords-match      | text-or | キーワードのOR検索(text-or)かAND検索(text-and)かを指定、RegExpで正規表現も可 |
 | --lang \<lang\>       | ja | 言語(jaとenのみ対応、無指定も可) |
 | --ignore-retweet      | | リツイートを結果に含めない |
 | --only-retweet        | | リツイートのみ取得する |
+| --has-geo             | | ジオタグ付きTweetのみ |
 | --jst                 | | create_atを日本時間にする |
 | --mask \<mask\>       | id_str,text,user(id_str,name,screen_name) | 結果に残すJSONフィールドの指定([書き方](https://www.npmjs.com/package/json-mask)) |
 | --verbose             | | 結果にエラーやファイル毎統計情報を含める |
@@ -58,20 +60,37 @@ npx -p exhaustive-twitter-crawler -- instant <option>
   
 * 2021年10月25日から11月4日においてハロウィンもしくはコロナが含まれた日本語のツイートのうちリツイートではないものを検索しWebDAVサーバへアップロードしたい。
 ```
-npx -p exhaustive-twitter-crawler instant --id yokoyama20211208 --term 2021/10/25T00:00-2021/11/5T00:00 --keywords ハロウィン 仮装 --keywords-match text-or --ignore-retweet --url wss://query-server:1111/ --webdav --destination https://web-dav-server:2222/result/ --user username-for-web-dav-server
+npx -p exhaustive-twitter-crawler instant --id yokoyama20211208 --term 2022-04-01T00:00~2022-04-02T00:00 --keywords ハロウィン 仮装 --keywords-match text-or --ignore-retweet --url wss://query-server:1111/ --webdav --destination https://web-dav-server:2222/result/ --user username-for-web-dav-server
 ```
 
 ### 実行例(外部サーバから)
 
-* まず自分のIDを取得
+| セキュリティ上、利用者を限定するために、tokenを用いたクエリ認可の仕組みがあります。クエリを発行する前に、以下の手順に従い管理者からtokensを発行してもらう必要があります。
+
+* まず自分のClient IDを取得する
 ```
 npx -y -p exhaustive-twitter-crawler -- get-id
 ```
 * IDが画面に表示されるのでそれをサーバ担当へ通知しトークンをもらう。
 * トークン一つにつき一つのクエリが出来ます。またget-idを行った環境からのみ有効です。
-* トークンを使ってクエリを発行する。
-  * ただし、web-dav-serverは自分で準備する、ngrok-gateway-serverのURLは公開していないので担当者に聞く
+* tokenを以下の**様な**コマンドで登録する。(実際のコマンドは管理者から与えられます。)
 
 ```
-npx -y -p exhaustive-twitter-crawler -- instant --id april-fool --term 2022/04/01T00:00-2022/04/02T00:00 --keywords エイプリルフール --keywords-match text-or --mask text,id,user\(id\),created_at,timestamp_ms,retweeted_status\(text,id_str,user\(id_str\),created_at\) --url wss://ngrok-gateway-server --giveaway webdav --destination https://web-dav-server:2222/result/ --user shohei --token TKNxxxxxxxxxxxxxxxx
+npx -y -p exhaustive-twitter-crawler@latest set-tokens <ここにTokenが_区切りで入る>
 ```
+
+* クエリを発行する。(クエリ発行の度にtokenは一つずつ消費されます)
+* どこかのWebDAVサーバへアップロードする場合(WebDAVサーバは自前で準備する必要があります。)
+
+```
+npx -y -p exhaustive-twitter-crawler -- instant --term 2022/04/01T00:00-2022/04/02T00:00 --keywords エイプリルフール --keywords-match text-or --mask text,id,user\(id\),created_at,timestamp_ms,retweeted_status\(text,id_str,user\(id_str\),created_at\) --giveaway webdav --destination https://web-dav-server:2222/result/ --user shohei --id april-fool
+```
+
+* クエリを発行しているコンピュータに結果を取り寄せる(結果ファイルの転送時間はWebDAVサーバへアップロードするよりかかります)
+  
+```
+npx -y -p exhaustive-twitter-crawler -- instant --term 2022-04-01T00:00~2022-04-02T00:00 --keywords エイプリルフール --keywords-match text-or --mask text,id,user\(id\),created_at,timestamp_ms,retweeted_status\(text,id_str,user\(id_str\),created_at\) --id april-fool
+```
+
+* 結果は**apil-fool-YYYYMMDDHHMMSS.tar.gz**というファイル名で保存されます。
+  * YYYYMMDDHHMMSSは結果作成時の時刻
