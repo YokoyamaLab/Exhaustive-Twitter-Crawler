@@ -33,6 +33,7 @@ program
     .option('-d, --destination <url-or-path>', '(giveawa=local|webdav) Save Location')
     .option('-n, --user <username>', '(giveaway=webdav) Username for Webdav Server')
     .option('-p, --port <port>', '(giveaway=here) Port Number of this machine', 4580)
+    .option('-b, --boost', 'Enable 2 phase text match')
     .option('-v, --verbose', 'Output detailed stats and errors');
 program.parse();
 const options = program.opts();
@@ -135,7 +136,8 @@ try {
     if (options.mask) {
         query.mask = options.mask;
     } else if (options.hasGeo) {
-        query.mask = 'id_str,text,user(id_str,name,screen_name,location),is_quote_status,quoted_status_id_str,retweeted_status(id_str,user(id_str,name,screen_name,location)),entities(hashtags,user_mentions,urls),geo,place,coordinates,lang,timestamp_ms,created_at';
+        query.mask =
+            'id_str,text,user(id_str,name,screen_name,location),is_quote_status,quoted_status_id_str,retweeted_status(id_str,user(id_str,name,screen_name,location)),entities(hashtags,user_mentions,urls),geo,place,coordinates,lang,timestamp_ms,created_at';
     } else {
         query.mask = 'id_str,text,user(id_str,name,screen_name),is_quote_status,quoted_status_id_str,retweeted_status(id_str,user(id_str,name,screen_name)),entities(hashtags,user_mentions,urls),lang,timestamp_ms,created_at';
     }
@@ -154,6 +156,7 @@ try {
     if (options.hasGeo) {
         query.filters['has_geo'] = true;
     }
+    query.boost = options.boost ? true : false;
     if (options.giveaway == 'local') {
         query.giveaway = 'local';
         query.destination = options.destination;
@@ -166,6 +169,9 @@ try {
         }
     } else {
         query.giveaway = 'no';
+    }
+    if (options.email) {
+        query.email = options.email;
     }
 
     //ファイルが有ってtokensの長さが0なら停止："set-tokens"の実行を勧める
@@ -219,7 +225,7 @@ try {
                         ['Hit数', pad(response.stats.nHits, 10) + ' tweets'],
                         ['走査数', pad(response.stats.nTweets, 10) + ' tweets'],
                         ['秒間処理数', pad(Math.round(response.stats.TPS), 10) + ' tweets/sec'],
-                        ['検索時間', tsFinish.diff(tsStart, ['days', 'hours', 'minutes', 'seconds']).toHuman()],
+                        ['検索時間', tsFinish.diff(tsStart, ['days', 'hours', 'minutes', 'seconds']).toHuman() + ' (' + tsStart + ' ~ ' + tsFinish + ' )'],
                     ],
                     {
                         hasBorder: true,

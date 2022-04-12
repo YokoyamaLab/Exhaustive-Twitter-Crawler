@@ -7,10 +7,10 @@ const server = new webdav.WebDAVServer({
     port: workerData.port,
 });
 server.on('create', (ctx, fs, path, data) => {
-    console.log('Resource created; createIntermediates=', data.createIntermediates);
+    //console.log('Resource created; createIntermediates=', data.createIntermediates);
 });
 server.on('before-create', (ctx, fs, path, data) => {
-    console.log('Before resource created; createIntermediates=', data.createIntermediates);
+    //console.log('Before resource created; createIntermediates=', data.createIntermediates);
 });
 
 server.setFileSystem('/' + workerData.path, new webdav.PhysicalFileSystem('.'), (success) => {
