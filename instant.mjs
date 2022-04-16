@@ -27,7 +27,8 @@ program
     .option('-m, --mask <mask>', 'JSON Mask (https://www.npmjs.com/package/json-mask)')
     .option('--ignore-retweet', 'Filter: Ignore Retweet')
     .option('--only-retweet', 'Filter: Only Retweet')
-    .option('--has-geo', 'Filter: Has Geotag')
+    .option('--has-geo', 'Filter: Has Geotag (Point and Polygon)')
+    .option('--has-geo-point', 'Filter: Has Geotag (only Point)')
     .addOption(new Option('-g, --giveaway <method>', 'Upload Method').choices(['no', 'local', 'webdav', 'here']).default('here', 'Download result to the current directory'))
     .option('--jst', 'Convert create_at to JST')
     .option('-d, --destination <url-or-path>', '(giveawa=local|webdav) Save Location')
@@ -156,6 +157,9 @@ try {
     if (options.hasGeo) {
         query.filters['has_geo'] = true;
     }
+    if (options.hasGeoPoint) {
+        query.filters['has_geo'] = "point";
+    }
     query.boost = options.boost ? true : false;
     if (options.giveaway == 'local') {
         query.giveaway = 'local';
@@ -191,9 +195,7 @@ try {
     fs.writeFileSync(instantConfigFile, JSON.stringify(instantConfig), { flag: 'w+' });
 
     const queryId = instantConfig.clientId + '_' + token;
-    //console.log(query, queryId);
     const commandLine = process.argv.join(' ');
-    //console.log(options.url);
     const socket = io(options.url);
     socket.on('disconnect', async () => {
         terminal.processExit();
@@ -209,14 +211,7 @@ try {
             const tsStart = DateTime.fromMillis(response.stats.tsStart);
             const tsFinish = DateTime.fromMillis(response.stats.tsFinish);
             if (response.success) {
-                /*
-            terminal('[Cool Down]\n');
-            await ((ms) => {
-                return new Promise((r) => setTimeout(r, ms));
-            })(20000);
-            */
-                terminal('[Query Done]\n');
-                //console.log(response.stats);
+                terminal('[Query Done]\n')
                 const pad = (num, keta) => {
                     return num.length > keta ? num : (' '.repeat(keta) + num).slice(keta * -1);
                 };
