@@ -105,16 +105,16 @@ try {
     });
     if (options.keywords === false) {
         //no-keywordsモード
-        options.keywords = null;
-    } else if (!options.keywords) {
+        options.keywords = [];
+    } else if (options.keywords === true) {
+        //no-keywords, keywords指定なし
         throw new RangeError('--keywordsを指定しない場合(=全ツイート取得)は--no-keywordsスイッチを指定してください。');
-    } else {
-        if (options.keywords.length == 1) {
-            try {
-                options.keywords = JSON.parse(options.keywords[0]);
-            } catch (e) {
-                //Nothing To Do
-            }
+    } else if (options.keywords.length == 1 && options.keywords[0].indexOf('[') === 0) {
+        //JSONモード
+        try {
+            options.keywords = JSON.parse(options.keywords[0]);
+        } catch (e) {
+            throw new RangeError('--keywordsにJSONが指定されているようですが、フォーマットが間違っています。');
         }
     }
     const query = {
@@ -136,7 +136,7 @@ try {
     };
     if (options.mask) {
         query.mask = options.mask;
-    } else if (options.hasGeo) {
+    } else if (options.hasGeo || options.hasGeoPoint) {
         query.mask =
             'id_str,text,user(id_str,name,screen_name,location),is_quote_status,quoted_status_id_str,retweeted_status(id_str,user(id_str,name,screen_name,location)),entities(hashtags,user_mentions,urls),geo,place,coordinates,lang,timestamp_ms,created_at';
     } else {
@@ -145,7 +145,7 @@ try {
     if (options.lang) {
         query.lang = options.lang;
     }
-    if (options.keywords === false) {
+    if (options.keywords.length == 0) {
         query.filters['no_keywords'] = true;
     }
     if (options.ignoreRetweet) {
@@ -155,10 +155,10 @@ try {
         query.filters['only_retweet'] = true;
     }
     if (options.hasGeo) {
-        query.filters['has_geo'] = true;
+        query.filters['has_geo'] = 'all';
     }
     if (options.hasGeoPoint) {
-        query.filters['has_geo'] = "point";
+        query.filters['has_geo'] = 'point';
     }
     query.boost = options.boost ? true : false;
     if (options.giveaway == 'local') {
@@ -198,6 +198,13 @@ try {
     const commandLine = process.argv.join(' ');
     const socket = io(options.url);
     socket.on('disconnect', async () => {
+        terminal.clear();
+        terminal('\n');
+        terminal.bgColorRgb(244, 67, 54);
+        terminal.colorRgb(232, 234, 246);
+        terminal('[Disconnected!] サーバから切断されました。\n\n');
+        terminal.defaultColor();
+        terminal.bgDefaultColor();
         terminal.processExit();
     });
     let stopped = false;
@@ -208,10 +215,10 @@ try {
             stopped = true;
             terminal.clear();
             terminal.eraseDisplay();
-            const tsStart = DateTime.fromMillis(response.stats.tsStart);
-            const tsFinish = DateTime.fromMillis(response.stats.tsFinish);
             if (response.success) {
-                terminal('[Query Done]\n')
+                const tsStart = DateTime.fromMillis(response.stats.tsStart);
+                const tsFinish = DateTime.fromMillis(response.stats.tsFinish);
+                terminal('[Query Done]\n');
                 const pad = (num, keta) => {
                     return num.length > keta ? num : (' '.repeat(keta) + num).slice(keta * -1);
                 };

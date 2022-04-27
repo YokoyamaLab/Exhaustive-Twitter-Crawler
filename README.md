@@ -69,15 +69,17 @@ npx -y -p exhaustive-twitter-crawler -- instant --term 2022-04-01T00:00~2022-04-
 | ------------- | ------------- | ------------- |
 | --term \<from-to\>    | 2020-05-01T00:00~2021-07-01T00:00 | 〈必須1〉クロール期間(最初と最後)をチルダ(~)区切りのISO8601形式にて指定  |
 | --keywords            | コロナ マスク 自粛 | 〈必須2〉キーワードリスト(半角スペース区切りもしくはJSON) |
-| --no-keywords         | | 〈必須2〉keywordsを指定しない時は必ず--no-keywordsを指定する |
+| --no-keywords         | | 〈必須2〉keywordsを指定しない時は必ず--no-keywordsを指定する(全量取得するので注意！) |
 | --keywords-match      | text-or | キーワードのOR検索(text-or)かAND検索(text-and)かを指定、RegExpで正規表現も可 |
 | --lang \<lang\>       | ja | 言語(jaとenのみ対応、無指定も可) |
 | --ignore-retweet      | | リツイートを結果に含めない |
 | --only-retweet        | | リツイートのみ取得する |
 | --has-geo             | | ジオタグ付きTweetのみ |
+| --has-geo-point       | | ジオタグ付きTweetのみ(Pointを持つもの限定) |
 | --jst                 | | create_atを日本時間にする |
 | --mask \<mask\>       | id_str,text,user(id_str,name,screen_name) | 結果に残すJSONフィールドの指定([書き方](https://www.npmjs.com/package/json-mask)) |
 | --verbose             | | 結果にエラーやファイル毎統計情報を含める |
+| --boost               | | (β版)検索を高速にする(JSONパース前に文字列一致を行う事で検索を高速化します)
 
 * `mask`の指定がない場合はデフォルトで以下のマスクがかけられます。
   * `id_str,text,user(id_str,name,screen_name),is_quote_status,quoted_status_id_str,retweeted_status(id_str,user(id_str,name,screen_name)),entities(hashtags,user_mentions,urls),lang,timestamp_ms,created_at`
