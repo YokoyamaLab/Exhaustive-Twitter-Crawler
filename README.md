@@ -54,24 +54,22 @@ npx -y -p exhaustive-twitter-crawler -- instant --term 2022-04-01T00:00~2022-04-
 
 #### 全体関連
 
-| スイッチ  | 例(初期値) | 説明 |
+| スイッチ  | 例 | 説明 |
 | ------------- | ------------- | ------------- |
 | --id \<identifier\>   | my-query | 〈必須〉クエリ識別ID (ファイル名に使える文字のみ)  |
-| --url \<url\>         | wss://query-server:1111/ | 〈必須〉全量処理サーバ(URLは管理者に聞いてください) |
-| --output \<format\>   |  daily | 結果フォーマット、日毎1ファイル(daily)もしくはアーカイブそのまま(as-is) |
+| --url \<url\>         | wss://query-server:1111/ | デフォルトと異なるサーバを指定したいときのみ |
 | --giveaway \<method\> | no | 結果の送信方法(no, local, webdav, curl) |
-| --notification \<email\> |  | 処理進行を通知するメールアドレス |
 | --token \<token\> |  | リモートアクセス時に必要なアクセストークン |
 
 #### 検索関連
 
-| スイッチ  | 例(初期値) | 説明 |
+| スイッチ  | 例 | 説明 |
 | ------------- | ------------- | ------------- |
 | --term \<from-to\>    | 2020-05-01T00:00~2021-07-01T00:00 | 〈必須1〉クロール期間(最初と最後)をチルダ(~)区切りのISO8601形式にて指定  |
 | --keywords            | コロナ マスク 自粛 | 〈必須2〉キーワードリスト(半角スペース区切りもしくはJSON) |
 | --no-keywords         | | 〈必須2〉keywordsを指定しない時は必ず--no-keywordsを指定する(全量取得するので注意！) |
 | --keywords-match      | text-or | キーワードのOR検索(text-or)かAND検索(text-and)かを指定、RegExpで正規表現も可 |
-| --lang \<lang\>       | ja | 言語(jaとenのみ対応、無指定も可) |
+| --lang \<lang\>       | | 言語(jaとenのみ対応、無指定は全ツイード) |
 | --ignore-retweet      | | リツイートを結果に含めない |
 | --only-retweet        | | リツイートのみ取得する |
 | --has-geo             | | ジオタグ付きTweetのみ |
@@ -87,13 +85,13 @@ npx -y -p exhaustive-twitter-crawler -- instant --term 2022-04-01T00:00~2022-04-
 
 #### 結果取得( `--giveaway local` の場合)
 
-| スイッチ  | 例(初期値) | 説明 |
+| スイッチ  | 例 | 説明 |
 | ------------- | ------------- | ------------- |
-| --destination \<path\> | ~/exhaustive-twitter/ | (同サーバ上でtwitterguestsグループが書き込める)保存先ディレクトリ | 
+| --destination \<path\> | ~/exhaustive-twitter/ | tokyo012上でtwitterguestsグループが書き込める)保存先ディレクトリ | 
 
 #### 結果取得( `--giveaway webdav` の場合)
 
-| スイッチ  | 例(初期値) | 説明 |
+| スイッチ  | 例 | 説明 |
 | ------------- | ------------- | ------------- |
 | --destination \<url\> | https://web-dav-server:2222/paht/to/dir/ | アップロード先(WebDAVのURL) | 
 | --user  \<username\>  | shohei | WebDAVサーバにログインするユーザ名(パスワードは実行後に聞かれます)
