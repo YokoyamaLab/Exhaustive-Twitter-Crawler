@@ -155,7 +155,7 @@ try {
     if (options.onlyRetweet) {
         query.filters['only_retweet'] = true;
     }
-    if (options.onlyRetweet) {
+    if (options.onlyQuote) {
         query.filters['only_quote'] = true;
     }
     if (options.hasGeo) {
