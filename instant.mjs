@@ -27,6 +27,7 @@ program
     .option('-m, --mask <mask>', 'JSON Mask (https://www.npmjs.com/package/json-mask)')
     .option('--ignore-retweet', 'Filter: Ignore Retweet')
     .option('--only-retweet', 'Filter: Only Retweet')
+    .option('--only-quote', 'Filter: Only Quote')
     .option('--has-geo', 'Filter: Has Geotag (Point and Polygon)')
     .option('--has-geo-point', 'Filter: Has Geotag (only Point)')
     .addOption(new Option('-g, --giveaway <method>', 'Upload Method').choices(['no', 'local', 'webdav', 'here']).default('here', 'Download result to the current directory'))
@@ -130,7 +131,7 @@ try {
         //urlsMatch:"text-or", //,"text-and" or "RegExp"
         //urls:[""],
         //lang: 'ja',
-        filters: {}, //ignore_retweet, only_retweet
+        filters: {}, //ignore_retweet, only_retweet, only_quote
         verbose: options.verbose ? true : false,
         jst: options.jst ? true : false,
     };
@@ -153,6 +154,9 @@ try {
     }
     if (options.onlyRetweet) {
         query.filters['only_retweet'] = true;
+    }
+    if (options.onlyRetweet) {
+        query.filters['only_quote'] = true;
     }
     if (options.hasGeo) {
         query.filters['has_geo'] = 'all';
