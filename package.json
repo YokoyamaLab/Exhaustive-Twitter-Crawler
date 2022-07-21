@@ -1,6 +1,6 @@
 {
     "name": "exhaustive-twitter-crawler",
-    "version": "0.4.16",
+    "version": "0.4.17",
     "description": "",
     "main": "instant.mjs",
     "scripts": {

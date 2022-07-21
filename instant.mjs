@@ -194,6 +194,10 @@ try {
         terminal('\nYour Client ID is ' + instantConfig.clientId + '\n\n');
         terminal.processExit();
         process.exit();
+    }else if(instantConfig.tokens.length < 1000){
+        terminal('[Token Warning] Tokenの残りが'+instantConfig.tokens.length+'です。必要に応じて以下のClient IDを管理者へ伝えて追加のTokenを発行を依頼してください。');
+        terminal('\nYour Client ID is ' + instantConfig.clientId + '\n\n');
+        await (msec => new Promise(resolve => setTimeout(resolve, msec)))(5000);
     }
     const token = instantConfig.tokens.pop();
     fs.writeFileSync(instantConfigFile, JSON.stringify(instantConfig), { flag: 'w+' });
