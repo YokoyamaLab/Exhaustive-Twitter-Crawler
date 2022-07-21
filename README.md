@@ -72,6 +72,7 @@ npx -y -p exhaustive-twitter-crawler -- instant --term 2022-04-01T00:00~2022-04-
 | --lang \<lang\>       | | 言語(jaとenのみ対応、無指定は全ツイード) |
 | --ignore-retweet      | | リツイートを結果に含めない |
 | --only-retweet        | | リツイートのみ取得する |
+| --only-quote          | | 引用リツイートのみ取得する |
 | --has-geo             | | ジオタグ付きTweetのみ |
 | --has-geo-point       | | ジオタグ付きTweetのみ(Pointを持つもの限定) |
 | --jst                 | | create_atを日本時間にする |
