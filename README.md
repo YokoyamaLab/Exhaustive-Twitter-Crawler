@@ -68,11 +68,12 @@ npx -y -p exhaustive-twitter-crawler -- instant --term 2022-04-01T00:00~2022-04-
 | --term \<from-to\>    | 2020-05-01T00:00~2021-07-01T00:00 | 〈必須1〉クロール期間(最初と最後)をチルダ(~)区切りのISO8601形式にて指定  |
 | --keywords            | コロナ マスク 自粛 | 〈必須2〉キーワードリスト(半角スペース区切りもしくはJSON) |
 | --no-keywords         | | 〈必須2〉keywordsを指定しない時は必ず--no-keywordsを指定する(全量取得するので注意！) |
-| --keywords-match      | text-or | キーワードのOR検索(text-or)かAND検索(text-and)かを指定、RegExpで正規表現も可 |
+| --keywords-match      | text-or | キーワードのOR検索(text-or)かAND検索(text-and)かを指定、RegExpで正規表現も可。また tweet-id で id_str を指定。 |
 | --lang \<lang\>       | | 言語(jaとenのみ対応、無指定は全ツイード) |
 | --ignore-retweet      | | リツイートを結果に含めない |
 | --only-retweet        | | リツイートのみ取得する |
 | --only-quote          | | 引用リツイートのみ取得する |
+| --retweet-count \<min-retweet\> | |  指定数以上 RT されたツイートのみ取得する |
 | --has-geo             | | ジオタグ付きTweetのみ |
 | --has-geo-point       | | ジオタグ付きTweetのみ(Pointを持つもの限定) |
 | --jst                 | | create_atを日本時間にする |
