@@ -20,7 +20,7 @@ program
     .requiredOption('-i, --id <id>', 'Query Identifier')
     .option('-u, --url <url>', 'URL of WebSocket Server', 'wss://tokyo.jp.ngrok.io')
     .requiredOption('-t, --term <yyyy/mm/ddThh:mm-yyyy/mm/ddThh:mm>', 'Search Term')
-    .addOption(new Option('--keywords-match <method>', 'Text Match Method').choices(['text-and', 'text-or', 'RegExp']).default('text-or', 'Text OR'))
+    .addOption(new Option('--keywords-match <method>', 'Text Match Method').choices(['text-and', 'text-or', 'RegExp', 'tweet-id']).default('text-or', 'Text OR'))
     .option('--no-keywords', 'Fetch All Tweets!')
     .option('-k, --keywords <word...>', 'Comma Separated Search Keywords')
     .addOption(new Option('-l, --lang <lang>', 'Language').choices(['ja', 'en']))
@@ -36,7 +36,8 @@ program
     .option('-n, --user <username>', '(giveaway=webdav) Username for Webdav Server')
     .option('-p, --port <port>', '(giveaway=here) Port Number of this machine', 4580)
     .option('-b, --boost', 'Enable 2 phase text match')
-    .option('-v, --verbose', 'Output detailed stats and errors');
+    .option('-v, --verbose', 'Output detailed stats and errors')
+    .option('--retweet-count <min-retweet>', 'Filter: retweet_count >= min-retweet');
 program.parse();
 const options = program.opts();
 try {
@@ -124,14 +125,14 @@ try {
         //to: DateTime.fromFormat(term[1], 'yyyy/MM/dd HH:mm').toISO(),
         from: term[0].toISO(),
         to: term[1].toISO(),
-        keywordsMatch: options.keywordsMatch, //,"text-and" or "RegExp"
+        keywordsMatch: options.keywordsMatch, //,"text-and" or "RegExp" or "tweet-id"
         keywords: options.keywords,
         //hashtagsMatch:"text-or", //,"text-and" or "RegExp"
         //hashtags:["コロナ"],
         //urlsMatch:"text-or", //,"text-and" or "RegExp"
         //urls:[""],
         //lang: 'ja',
-        filters: {}, //ignore_retweet, only_retweet, only_quote
+        filters: {}, //ignore_retweet, only_retweet, only_quote, retweet_count
         verbose: options.verbose ? true : false,
         jst: options.jst ? true : false,
     };
@@ -163,6 +164,9 @@ try {
     }
     if (options.hasGeoPoint) {
         query.filters['has_geo'] = 'point';
+    }
+    if (options.retweetCount) {
+        query.filters['retweet_count'] = options.retweetCount;
     }
     query.boost = options.boost ? true : false;
     if (options.giveaway == 'local') {
