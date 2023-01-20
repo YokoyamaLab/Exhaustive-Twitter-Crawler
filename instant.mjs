@@ -20,7 +20,7 @@ program
     .requiredOption('-i, --id <id>', 'Query Identifier')
     .option('-u, --url <url>', 'URL of WebSocket Server', 'wss://tokyo.jp.ngrok.io')
     .requiredOption('-t, --term <yyyy/mm/ddThh:mm-yyyy/mm/ddThh:mm>', 'Search Term')
-    .addOption(new Option('--keywords-match <method>', 'Text Match Method').choices(['text-and', 'text-or', 'RegExp', 'tweet-id', 'expanded-url','has-emoji']).default('text-or', 'Text OR'))
+    .addOption(new Option('--keywords-match <method>', 'Text Match Method').choices(['text-and', 'text-or', 'RegExp', 'tweet-id', 'expanded-url']).default('text-or', 'Text OR'))
     .option('--no-keywords', 'Fetch All Tweets!')
     .option('-k, --keywords <word...>', 'Comma Separated Search Keywords')
     .addOption(new Option('-l, --lang <lang>', 'Language').choices(['ja', 'en']))
@@ -30,6 +30,7 @@ program
     .option('--only-quote', 'Filter: Only Quote')
     .option('--has-geo', 'Filter: Has Geotag (Point and Polygon)')
     .option('--has-geo-point', 'Filter: Has Geotag (only Point)')
+    .option('--has-emoji', 'Filter: Has Emoji)')
     .addOption(new Option('-g, --giveaway <method>', 'Upload Method').choices(['no', 'local', 'webdav', 'here']).default('here', 'Download result to the current directory'))
     .option('--jst', 'Convert create_at to JST')
     .option('-d, --destination <url-or-path>', '(giveawa=local|webdav) Save Location')
@@ -161,6 +162,9 @@ try {
     }
     if (options.hasGeo) {
         query.filters['has_geo'] = 'all';
+    }
+    if (options.hasEmoji) {
+        query.filters['has_emoji'] = true;
     }
     if (options.hasGeoPoint) {
         query.filters['has_geo'] = 'point';
