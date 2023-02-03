@@ -30,6 +30,7 @@ program
     .option('--only-quote', 'Filter: Only Quote')
     .option('--has-geo', 'Filter: Has Geotag (Point and Polygon)')
     .option('--has-geo-point', 'Filter: Has Geotag (only Point)')
+    .option('--has-emoji', 'Filter: Has Emoji)')
     .addOption(new Option('-g, --giveaway <method>', 'Upload Method').choices(['no', 'local', 'webdav', 'here']).default('here', 'Download result to the current directory'))
     .option('--jst', 'Convert create_at to JST')
     .option('-d, --destination <url-or-path>', '(giveawa=local|webdav) Save Location')
@@ -161,6 +162,9 @@ try {
     }
     if (options.hasGeo) {
         query.filters['has_geo'] = 'all';
+    }
+    if (options.hasEmoji) {
+        query.filters['has_emoji'] = true;
     }
     if (options.hasGeoPoint) {
         query.filters['has_geo'] = 'point';
