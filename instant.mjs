@@ -30,6 +30,7 @@ program
     .option('--only-quote', 'Filter: Only Quote')
     .option('--has-geo', 'Filter: Has Geotag (Point and Polygon)')
     .option('--has-geo-point', 'Filter: Has Geotag (only Point)')
+    .option('--bbox <min-lng,min-lat,max-lng,max-lat>', 'Filter: Tweets inside/intersect BBOX (with -gas-geo-option)')
     .option('--has-emoji', 'Filter: Has Emoji)')
     .addOption(new Option('-g, --giveaway <method>', 'Upload Method').choices(['no', 'local', 'webdav', 'here']).default('here', 'Download result to the current directory'))
     .option('--jst', 'Convert create_at to JST')
@@ -120,6 +121,15 @@ try {
             throw new RangeError('--keywordsにJSONが指定されているようですが、フォーマットが間違っています。');
         }
     }
+    if (
+        options.bbox &&
+        (options.bbox.split(',').length != 4 ||
+            options.bbox.split(',').some((v) => {
+                return isNaN(parseFloat(v));
+            }))
+    ) {
+        throw new RangeError('--bboxの指定が間違っています。西,南,東,北の順でカンマ区切りで指定してください。');
+    }
     const query = {
         title: options.id,
         //from: DateTime.fromFormat(term[0], 'yyyy/MM/dd HH:mm').toISO(),
@@ -140,6 +150,9 @@ try {
     if (options.mask) {
         query.mask = options.mask;
     } else if (options.hasGeo || options.hasGeoPoint) {
+        if (options.bbox) {
+            query.bbox = options.bbox.split(',');
+        }
         query.mask =
             'id_str,text,user(id_str,name,screen_name,location),is_quote_status,quoted_status_id_str,retweeted_status(id_str,user(id_str,name,screen_name,location)),entities(hashtags,user_mentions,urls),geo,place,coordinates,lang,timestamp_ms,created_at';
     } else {
@@ -202,10 +215,10 @@ try {
         terminal('\nYour Client ID is ' + instantConfig.clientId + '\n\n');
         terminal.processExit();
         process.exit();
-    }else if(instantConfig.tokens.length < 1000){
-        terminal('[Token Warning] Tokenの残りが'+instantConfig.tokens.length+'です。必要に応じて以下のClient IDを管理者へ伝えて追加のTokenを発行を依頼してください。');
+    } else if (instantConfig.tokens.length < 1000) {
+        terminal('[Token Warning] Tokenの残りが' + instantConfig.tokens.length + 'です。必要に応じて以下のClient IDを管理者へ伝えて追加のTokenを発行を依頼してください。');
         terminal('\nYour Client ID is ' + instantConfig.clientId + '\n\n');
-        await (msec => new Promise(resolve => setTimeout(resolve, msec)))(5000);
+        await ((msec) => new Promise((resolve) => setTimeout(resolve, msec)))(5000);
     }
     const token = instantConfig.tokens.pop();
     fs.writeFileSync(instantConfigFile, JSON.stringify(instantConfig), { flag: 'w+' });
