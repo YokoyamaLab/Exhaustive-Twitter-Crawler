@@ -30,7 +30,7 @@ program
     .option('--only-quote', 'Filter: Only Quote')
     .option('--has-geo', 'Filter: Has Geotag (Point and Polygon)')
     .option('--has-geo-point', 'Filter: Has Geotag (only Point)')
-    .option('--bbox <min-lng,min-lat,max-lng,max-lat>', 'Filter: Tweets inside/intersect BBOX (with -gas-geo-option)')
+    .option('--bbox <min-lng,min-lat,max-lng,max-lat>', 'Filter: Tweets inside/intersect BBOX (with --gas-geo option)')
     .option('--has-emoji', 'Filter: Has Emoji)')
     .addOption(new Option('-g, --giveaway <method>', 'Upload Method').choices(['no', 'local', 'webdav', 'here']).default('here', 'Download result to the current directory'))
     .option('--jst', 'Convert create_at to JST')
@@ -150,9 +150,6 @@ try {
     if (options.mask) {
         query.mask = options.mask;
     } else if (options.hasGeo || options.hasGeoPoint) {
-        if (options.bbox) {
-            query.bbox = options.bbox.split(',');
-        }
         query.mask =
             'id_str,text,user(id_str,name,screen_name,location),is_quote_status,quoted_status_id_str,retweeted_status(id_str,user(id_str,name,screen_name,location)),entities(hashtags,user_mentions,urls),geo,place,coordinates,lang,timestamp_ms,created_at';
     } else {
@@ -181,6 +178,9 @@ try {
     }
     if (options.hasGeoPoint) {
         query.filters['has_geo'] = 'point';
+    }
+    if (options.bbox && query.filters.hasOwnProperty('has_geo')) {
+        query.bbox = options.bbox.split(',');
     }
     if (options.retweetCount) {
         query.filters['retweet_count'] = options.retweetCount;
