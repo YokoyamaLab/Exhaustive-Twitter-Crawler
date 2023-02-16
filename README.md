@@ -73,9 +73,11 @@ npx -y -p exhaustive-twitter-crawler -- instant --term 2022-04-01T00:00~2022-04-
 | --ignore-retweet      | | リツイートを結果に含めない |
 | --only-retweet        | | リツイートのみ取得する |
 | --only-quote          | | 引用リツイートのみ取得する |
+| --only-emoji          | | 絵文字のあるツイートのみ取得する |
 | --retweet-count \<min-retweet\> | |  指定数以上 RT されたツイートのみ取得する |
 | --has-geo             | | ジオタグ付きTweetのみ |
 | --has-geo-point       | | ジオタグ付きTweetのみ(Pointを持つもの限定) |
+| --bbox \<bbox\>                | 139.281801,35.099243,139.781679,35.514684 | 指定した範囲内のツイートのみ検索(西,南,東,北の順の範囲指定)|
 | --jst                 | | create_atを日本時間にする |
 | --mask \<mask\>       | id_str,text,user(id_str,name,screen_name) | 結果に残すJSONフィールドの指定([書き方](https://www.npmjs.com/package/json-mask)) |
 | --verbose             | | 結果にエラーやファイル毎統計情報を含める |
