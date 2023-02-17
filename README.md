@@ -77,7 +77,8 @@ npx -y -p exhaustive-twitter-crawler -- instant --term 2022-04-01T00:00~2022-04-
 | --retweet-count \<min-retweet\> | |  指定数以上 RT されたツイートのみ取得する |
 | --has-geo             | | ジオタグ付きTweetのみ |
 | --has-geo-point       | | ジオタグ付きTweetのみ(Pointを持つもの限定) |
-| --bbox \<bbox\>                | 139.281801,35.099243,139.781679,35.514684 | 指定した範囲内のツイートのみ検索(西,南,東,北の順の範囲指定)|
+| --bbox \<bbox\>       | 139.281801,35.099243,139.781679,35.514684 | 指定した範囲内のツイートのみ検索(西,南,東,北の順の範囲指定)|
+| --morpheme \<type\>   | | 形態素解析(sudachi)をして名詞・動詞・形容詞・形状詞のみ配列としてtweet.wordsに格納する(replace:textを置き換える / append:textも残す)|
 | --jst                 | | create_atを日本時間にする |
 | --mask \<mask\>       | id_str,text,user(id_str,name,screen_name) | 結果に残すJSONフィールドの指定([書き方](https://www.npmjs.com/package/json-mask)) |
 | --verbose             | | 結果にエラーやファイル毎統計情報を含める |
@@ -86,7 +87,13 @@ npx -y -p exhaustive-twitter-crawler -- instant --term 2022-04-01T00:00~2022-04-
 * `mask`の指定がない場合はデフォルトで以下のマスクがかけられます。
   * `id_str,text,user(id_str,name,screen_name),is_quote_status,quoted_status_id_str,retweeted_status(id_str,user(id_str,name,screen_name)),entities(hashtags,user_mentions,urls),lang,timestamp_ms,created_at`
 * `keywords`は`keywords-match`が`text-or`の時、`[[\"A\",\"B\"],[\"C\",\"D\"]]`と指定する事で、 **(A and B) or (C and D)** と解釈されます。`text-and`の時は **(A or B) and (C or D)** となります。
-
+* **形態素解析**を行う場合は`morpheme`を指定してください。
+  * このオプションでは形態素解析器[**sudachi**](https://www.npmjs.com/package/sudachi)を利用します。
+  * 名詞、動詞、形容詞、形状詞のうち、dictionary_formが空でないもののnormalized_formを、Tweetにmorphemesフィールドを追加し配列で格納します。
+  * `--morpheme append`の場合はtextも残しますが`--morpheme replace`の場合はtextは結果に残しません。
+  * 尚、アルファベット等ラテン文字もそのままsudachiにかけます。(大抵、問題無く形態素に分かれます)
+  * 事前にURLとメンションは削除されます。ハッシュタグは削除されませんので形態素として
+  * `morpheme`指定時には`mask`にも`morpheme`フィールドを指定してください。指定されない場合は、末尾に追加されます。
 #### 結果取得( `--giveaway local` の場合)
 
 | スイッチ  | 例 | 説明 |

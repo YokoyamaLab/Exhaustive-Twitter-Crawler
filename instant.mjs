@@ -32,8 +32,9 @@ program
     .option('--has-geo-point', 'Filter: Has Geotag (only Point)')
     .option('--bbox <min-lng,min-lat,max-lng,max-lat>', 'Filter: Tweets inside/intersect BBOX (with --gas-geo option)')
     .option('--has-emoji', 'Filter: Has Emoji)')
-    .addOption(new Option('-g, --giveaway <method>', 'Upload Method').choices(['no', 'local', 'webdav', 'here']).default('here', 'Download result to the current directory'))
+    .addOption(new Option('--morpheme <method>', 'Replace text or Append').choices(['replace', 'append']))
     .option('--jst', 'Convert create_at to JST')
+    .addOption(new Option('-g, --giveaway <method>', 'Upload Method').choices(['no', 'local', 'webdav', 'here']).default('here', 'Download result to the current directory'))
     .option('-d, --destination <url-or-path>', '(giveawa=local|webdav) Save Location')
     .option('-n, --user <username>', '(giveaway=webdav) Username for Webdav Server')
     .option('-p, --port <port>', '(giveaway=here) Port Number of this machine', 4580)
@@ -146,6 +147,7 @@ try {
         filters: {}, //ignore_retweet, only_retweet, only_quote, retweet_count
         verbose: options.verbose ? true : false,
         jst: options.jst ? true : false,
+        morpheme: options.morpheme == 'replace' ? 'replace' : 'append',
     };
     if (options.mask) {
         query.mask = options.mask;
@@ -154,6 +156,9 @@ try {
             'id_str,text,user(id_str,name,screen_name,location),is_quote_status,quoted_status_id_str,retweeted_status(id_str,user(id_str,name,screen_name,location)),entities(hashtags,user_mentions,urls),geo,place,coordinates,lang,timestamp_ms,created_at';
     } else {
         query.mask = 'id_str,text,user(id_str,name,screen_name),is_quote_status,quoted_status_id_str,retweeted_status(id_str,user(id_str,name,screen_name)),entities(hashtags,user_mentions,urls),lang,timestamp_ms,created_at';
+    }
+    if (options.morpheme && query.mask.indexOf('morphemes') === -1) {
+        query.mask += ",morphemes";
     }
     if (options.lang) {
         query.lang = options.lang;
