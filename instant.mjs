@@ -30,7 +30,7 @@ program
     .option('--only-quote', 'Filter: Only Quote')
     .option('--has-geo', 'Filter: Has Geotag (Point and Polygon)')
     .option('--has-geo-point', 'Filter: Has Geotag (only Point)')
-    .option('--bbox <min-lng,min-lat,max-lng,max-lat>', 'Filter: Tweets inside/intersect BBOX (with --gas-geo option)')
+    .option('--bbox <min-lng,min-lat,max-lng,max-lat>', 'Filter: Tweets inside/intersect BBOX (with --has-geo option)')
     .option('--has-emoji', 'Filter: Has Emoji)')
     .addOption(new Option('--morpheme <method>', 'Replace text or Append').choices(['replace', 'append']))
     .option('--jst', 'Convert create_at to JST')
@@ -159,6 +159,9 @@ try {
     }
     if (options.morpheme && query.mask.indexOf('morphemes') === -1) {
         query.mask += ",morphemes";
+    }
+    if (options.has_emoji && query.mask.indexOf('emojis') === -1) {
+        query.mask += ",emojis";
     }
     if (options.lang) {
         query.lang = options.lang;
