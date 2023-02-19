@@ -79,6 +79,7 @@ npx -y -p exhaustive-twitter-crawler -- instant --term 2022-04-01T00:00~2022-04-
 | --has-geo-point       | | ジオタグ付きTweetのみ(Pointを持つもの限定) |
 | --bbox \<bbox\>       | 139.281801,35.099243,139.781679,35.514684 | 指定した範囲内のツイートのみ検索(西,南,東,北の順の範囲指定)|
 | --morpheme \<type\>   | | 形態素解析(sudachi)をして名詞・動詞・形容詞・形状詞のみ配列としてtweet.wordsに格納する(replace:textを置き換える / append:textも残す)|
+| --has-emoji           | | 絵文字を持っているツイートのみ(emojisフィールドが追加されtext中の絵文字一覧が配列で格納されます)|
 | --jst                 | | create_atを日本時間にする |
 | --mask \<mask\>       | id_str,text,user(id_str,name,screen_name) | 結果に残すJSONフィールドの指定([書き方](https://www.npmjs.com/package/json-mask)) |
 | --verbose             | | 結果にエラーやファイル毎統計情報を含める |
@@ -89,11 +90,15 @@ npx -y -p exhaustive-twitter-crawler -- instant --term 2022-04-01T00:00~2022-04-
 * `keywords`は`keywords-match`が`text-or`の時、`[[\"A\",\"B\"],[\"C\",\"D\"]]`と指定する事で、 **(A and B) or (C and D)** と解釈されます。`text-and`の時は **(A or B) and (C or D)** となります。
 * **形態素解析**を行う場合は`morpheme`を指定してください。
   * このオプションでは形態素解析器[**sudachi**](https://www.npmjs.com/package/sudachi)を利用します。
-  * 名詞、動詞、形容詞、形状詞のうち、dictionary_formが空でないもののnormalized_formを、Tweetにmorphemesフィールドを追加し配列で格納します。
-  * `--morpheme append`の場合はtextも残しますが`--morpheme replace`の場合はtextは結果に残しません。
-  * 尚、アルファベット等ラテン文字もそのままsudachiにかけます。(大抵、問題無く形態素に分かれます)
-  * 事前にURLとメンションは削除されます。ハッシュタグは削除されませんので形態素として
-  * `morpheme`指定時には`mask`にも`morpheme`フィールドを指定してください。指定されない場合は、末尾に追加されます。
+  * 形態素のうち以下の者のみ結果に残します
+    * 名詞、動詞、形容詞、形状詞意外は削除します
+    * dictionary_formが空でないものあるいは全角カタカナのみで構成される形態素は削除します
+    * ただしUNICODE絵文字は結果の末尾に羅列します
+    * 結果は得られた形態素のnormalized_formを、Tweetにmorphemesフィールドを追加して配列として構成します
+    * `--morpheme append`の場合はtextも残しますが`--morpheme replace`の場合はtextは結果に残しません。
+    * 尚、アルファベット等ラテン文字もそのままsudachiにかけます。(大抵、問題無く形態素に分かれます)
+    * 事前にURLとメンションは削除されます。ハッシュタグは削除されませんので形態素として残ります。
+    * `morpheme`指定時には`mask`にの任意の位置に`morpheme`フィールドを指定する事ができます。指定されない場合は、末尾に追加されます。
 #### 結果取得( `--giveaway local` の場合)
 
 | スイッチ  | 例 | 説明 |

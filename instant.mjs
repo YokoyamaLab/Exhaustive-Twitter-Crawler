@@ -160,7 +160,7 @@ try {
     if (options.morpheme && query.mask.indexOf('morphemes') === -1) {
         query.mask += ",morphemes";
     }
-    if (options.has_emoji && query.mask.indexOf('emojis') === -1) {
+    if (options.hasEmoji && query.mask.indexOf('emojis') === -1) {
         query.mask += ",emojis";
     }
     if (options.lang) {
