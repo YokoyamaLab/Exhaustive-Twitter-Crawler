@@ -43,7 +43,7 @@ npx -y -p exhaustive-twitter-crawler -- instant --term 2022-04-01T00:00~2022-04-
 * 【方法２】クエリを発行しているコンピュータに結果を取り寄せる(結果ファイルの転送時間はWebDAVサーバへアップロードするよりかかります)
   
 ```
-npx -y -p exhaustive-twitter-crawler -- instant --term 2022-04-01T00:00~2022-04-02T00:00 --keywords エイプリルフール --keywords-match text-or --id april-fool
+npx -y -p exhaustive-twitter-crawler -- instant --term 2024-04-01T00:00~2024-04-02T00:00 --keywords エイプリルフール --keywords-match text-or --id april-fool 
 ```
 
 * 結果は**apil-fool-YYYYMMDDHHMMSS.tar.gz**というファイル名で保存されます。
