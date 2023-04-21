@@ -146,9 +146,12 @@ try {
         //lang: 'ja',
         filters: {}, //ignore_retweet, only_retweet, only_quote, retweet_count
         verbose: options.verbose ? true : false,
-        jst: options.jst ? true : false,
-        morpheme: options.morpheme == 'replace' ? 'replace' : 'append',
+        jst: options.jst ? true : false//,
+        //morpheme: options.morpheme == 'replace' ? 'replace' : 'append',
     };
+    if (options.morpheme){
+        query.morpheme = options.morpheme == 'replace' ? 'replace' : 'append';
+    }
     if (options.mask) {
         query.mask = options.mask;
     } else if (options.hasGeo || options.hasGeoPoint) {
@@ -159,6 +162,7 @@ try {
     }
     if (options.morpheme && query.mask.indexOf('morphemes') === -1) {
         query.mask += ",morphemes";
+        
     }
     if (options.hasEmoji && query.mask.indexOf('emojis') === -1) {
         query.mask += ",emojis";
