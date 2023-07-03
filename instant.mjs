@@ -32,10 +32,11 @@ program
     .option('--has-geo-point', 'Filter: Has Geotag (only Point)')
     .option('--bbox <min-lng,min-lat,max-lng,max-lat>', 'Filter: Tweets inside/intersect BBOX (with --has-geo option)')
     .option('--has-emoji', 'Filter: Has Emoji)')
+    .addOption(new Option('--filter-mode <method>', 'Filter Match Method').choices(['and', 'or']).default('and', 'Select Tweet if all filters are satisfied.'))
     .addOption(new Option('--morpheme <method>', 'Replace text or Append').choices(['replace', 'append']))
     .option('--jst', 'Convert create_at to JST')
     .addOption(new Option('-g, --giveaway <method>', 'Upload Method').choices(['no', 'local', 'webdav', 'here']).default('here', 'Download result to the current directory'))
-    .option('-d, --destination <url-or-path>', '(giveawa=local|webdav) Save Location')
+    .option('-d, --destination <url-or-path>', '(giveaway=local|webdav) Save Location')
     .option('-n, --user <username>', '(giveaway=webdav) Username for Webdav Server')
     .option('-p, --port <port>', '(giveaway=here) Port Number of this machine', 4580)
     .option('-b, --boost', 'Enable 2 phase text match')
@@ -145,6 +146,7 @@ try {
         //urls:[""],
         //lang: 'ja',
         filters: {}, //ignore_retweet, only_retweet, only_quote, retweet_count
+        filterMode:options.filterMode,
         verbose: options.verbose ? true : false,
         jst: options.jst ? true : false//,
         //morpheme: options.morpheme == 'replace' ? 'replace' : 'append',

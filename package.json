@@ -1,17 +1,19 @@
 {
     "name": "exhaustive-twitter-crawler",
-    "version": "0.4.35",
+    "version": "0.5.0",
     "description": "",
     "main": "instant.mjs",
     "scripts": {
         "instant": "node ./instant.mjs",
         "get-id": "node ./id.mjs",
-        "set-tokens": "node ./tokens.mjs"
+        "set-tokens": "node ./tokens.mjs",
+        "hello": "node ./hello.mjs"
     },
     "bin": {
         "instant": "./instant.mjs",
         "get-id": "./id.mjs",
         "set-tokens": "./tokens.mjs",
+        "hello": "./hello.mjs",
         "dav": "./webdav.mjs"
     },
     "repository": {
